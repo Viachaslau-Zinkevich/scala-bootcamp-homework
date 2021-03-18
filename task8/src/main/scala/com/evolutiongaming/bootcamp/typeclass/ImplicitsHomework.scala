@@ -1,5 +1,7 @@
 package com.evolutiongaming.bootcamp.typeclass
 
+import com.evolutiongaming.bootcamp.typeclass.ImplicitsHomework.SuperVipCollections4s.GetSizeScore
+
 import scala.annotation.tailrec
 import scala.collection.immutable.ArraySeq
 import scala.collection.mutable
@@ -173,17 +175,31 @@ object ImplicitsHomework {
 			implicit val stringGetSizeScore: ReferencedSizeScore[String] = s => s.length * 'c'.sizeScore
 			implicit val anySizeScore: GetSizeScore[Any] = fixed(12)
 
-			implicit val iteratorGetSizeScore: GetSizeScore2[Iterator] = new GetSizeScore2[Iterator] {
+			implicit def iteratorGetSizeScore[T: GetSizeScore]: GetSizeScore[Iterator[T]] = {
+				s => s.map(_.sizeScore).sum
+			}
+
+			implicit def iterableGetSizeScore[F[_]: Iterate, T: GetSizeScore]: GetSizeScore[F[T]] =
+				s => (s : Any).sizeScore + implicitly[Iterate[F]].iterator(s).sizeScore
+
+			implicit def iterableGetSizeScore2[F[_, _]: Iterate2, K: GetSizeScore, V: GetSizeScore]: GetSizeScore[F[K, V]] = {
+				value =>
+					val iterate2 = implicitly[Iterate2[F]]
+					(value : Any).sizeScore + iterate2.iterator1(value).sizeScore + iterate2.iterator2(value).sizeScore
+			}
+
+
+			/*implicit val iteratorGetSizeScore: GetSizeScore2[Iterator] = new GetSizeScore2[Iterator] {
 				override def apply[D: GetSizeScore](value: Iterator[D]): SizeScore = value.map(_.sizeScore).sum
 			}
 
 			implicit class GetSizeScoreIterate[T[_] : Iterate, K: GetSizeScore](inner: T[K])(implicit val imp: Iterate[T]) {
 				def sizeScore: SizeScore = (inner: Any).sizeScore + imp.iterator(inner).sizeScore
-			}
+			}*/
 
-			implicit class GetSizeScoreIterate2[T[_, _] : Iterate2, K: GetSizeScore, V: GetSizeScore](inner: T[K, V])(implicit val imp: Iterate2[T]) {
+			/*implicit class GetSizeScoreIterate2[T[_, _] : Iterate2, K: GetSizeScore, V: GetSizeScore](inner: T[K, V])(implicit val imp: Iterate2[T]) {
 				def sizeScore: SizeScore = (inner: Any).sizeScore + imp.iterator1(inner).sizeScore + imp.iterator2(inner).sizeScore
-			}
+			}*/
 
 		}
 
